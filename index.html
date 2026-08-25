@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Security Labs | eloyx3x</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #3b82f6;
+            --accent-hover: #60a5fa;
+            --border-color: #334155;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --purple: #c084fc;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 3rem 1rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            max-width: 800px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #3b82f6, #10b981);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .lab-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .lab-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+            border-color: var(--accent);
+        }
+
+        /* Top glow effect on hover */
+        .lab-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: var(--accent);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+            transform-origin: left;
+        }
+
+        .lab-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        /* Cores específicas para o topo de cada card */
+        .card-protocols:hover::before { background: var(--accent); border-color: var(--accent); }
+        .card-scanner:hover::before { background: var(--success); border-color: var(--success); }
+        .card-crypto:hover::before { background: var(--danger); border-color: var(--danger); }
+        .card-vuln:hover::before { background: var(--warning); border-color: var(--warning); }
+
+        .lab-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: rgba(255,255,255,0.05);
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+        }
+
+        .lab-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .lab-desc {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+            flex-grow: 1;
+            margin-bottom: 1.5rem;
+        }
+
+        .lab-footer {
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .lab-card:hover .lab-footer {
+            color: var(--accent-hover);
+        }
+
+        .lab-footer::after {
+            content: '→';
+            transition: transform 0.2s;
+        }
+
+        .lab-card:hover .lab-footer::after {
+            transform: translateX(5px);
+        }
+
+        .footer-note {
+            margin-top: 4rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+        
+        .footer-note a { color: var(--accent); text-decoration: none; }
+        .footer-note a:hover { text-decoration: underline; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Cyber Security Labs</h1>
+        <p>Um repositório de simulações interativas para ensino e demonstração de conceitos de Redes e Cibersegurança. Desenvolvido por <strong>eloyx3x</strong>.</p>
+    </div>
+
+    <div class="grid-container">
+        
+        <!-- Lab 1: Protocolos -->
+        <a href="Network_Protocols_Dashboard_v2.html" class="lab-card card-protocols">
+            <div class="lab-icon">🌐</div>
+            <div class="lab-title">Fluxo de Protocolos (L4/L7)</div>
+            <div class="lab-desc">Visualização animada do comportamento de conexões HTTP, TCP (3-way handshake), UDP, TLS, SSH e FTP com controle dinâmico de velocidade.</div>
+            <div class="lab-footer">Acessar Laboratório</div>
+        </a>
+
+        <!-- Lab 2: Network Scanner -->
+        <a href="Network_Scanner_Animation.html" class="lab-card card-scanner">
+            <div class="lab-icon">📡</div>
+            <div class="lab-title">Simulador de Port Scan (Nmap)</div>
+            <div class="lab-desc">Simulação tática de varredura de rede identificando portas abertas/fechadas usando pacotes SYN/RST e log interativo estilo terminal.</div>
+            <div class="lab-footer">Acessar Laboratório</div>
+        </a>
+
+        <!-- Lab 3: Interceptação e Cripto -->
+        <a href="crypto_sim.html" class="lab-card card-crypto">
+            <div class="lab-icon">🥷</div>
+            <div class="lab-title">Interceptação MitM & Cifras</div>
+            <div class="lab-desc">Demonstração de tráfego em texto claro (Plaintext), quebra de criptografia fraca via força bruta e a robustez de cifras fortes como o AES-256.</div>
+            <div class="lab-footer">Acessar Laboratório</div>
+        </a>
+
+        <!-- Lab 4: Vulnerabilidades -->
+        <a href="vuln_lab.html" class="lab-card card-vuln">
+            <div class="lab-icon">🛡️</div>
+            <div class="lab-title">Vulnerabilidades e Patching</div>
+            <div class="lab-desc">Laboratório interativo explorando CVEs históricas (POODLE, Sweet32, Bar Mitzvah) com opção de aplicar correções (patches) em tempo real no servidor.</div>
+            <div class="lab-footer">Acessar Laboratório</div>
+        </a>
+
+    </div>
+
+    <div class="footer-note">
+        Material open-source para fins educacionais. <br>
+        Siga no <a href="https://github.com/eloyx3x" target="_blank">GitHub</a> para mais projetos.
+    </div>
+
+</body>
+</html>
