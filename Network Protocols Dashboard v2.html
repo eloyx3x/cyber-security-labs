@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<!-- saved from url=(0063)file:///C:/Users/eloyg/Downloads/gemini-code-1787617443464.html -->
+<html lang="pt-BR"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Protocols Dashboard v2</title>
+    <style>
+        :root {
+            --bg-color: #121826;
+            --card-bg: #1c2434;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --http-color: #38bdf8;
+            --tcp-color: #4ade80;
+            --udp-color: #fbbf24;
+            --tls-color: #c084fc;
+            --ssh-color: #2dd4bf;
+            --ftp-color: #f43f5e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Controls Section */
+        .controls {
+            background-color: var(--card-bg);
+            border: 1px solid #2e3c54;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        .controls label {
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .controls input[type="range"] {
+            flex-grow: 1;
+            cursor: pointer;
+            accent-color: var(--http-color);
+        }
+
+        .controls span {
+            font-family: monospace;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--tcp-color);
+            min-width: 45px;
+        }
+
+        /* Dashboard Grid */
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        /* Card Styles */
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid #2e3c54;
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            height: 220px;
+        }
+
+        .card-header h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.25rem; }
+        .card-header p { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem; }
+        .divider { height: 3px; width: 40px; border-radius: 2px; margin-bottom: 1.5rem; }
+
+        /* Specific Protocol Colors */
+        .http .card-header h2 { color: var(--text-main); }
+        .http .divider { background-color: var(--http-color); }
+        .tcp .divider { background-color: var(--tcp-color); }
+        .udp .divider { background-color: var(--udp-color); }
+        .tls .divider { background-color: var(--tls-color); }
+        .ssh .divider { background-color: var(--ssh-color); }
+        .ftp .divider { background-color: var(--ftp-color); }
+
+        /* Animation Area */
+        .animation-area {
+            position: relative;
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 0;
+        }
+
+        .track {
+            position: absolute;
+            left: 50px;
+            right: 50px;
+            height: 1px;
+            background-color: #334155;
+            z-index: 1;
+        }
+
+        .node {
+            width: 50px;
+            height: 40px;
+            border: 2px solid #475569;
+            border-radius: 6px;
+            position: relative;
+            z-index: 2;
+            background-color: var(--card-bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .node::after {
+            content: attr(data-label);
+            position: absolute;
+            bottom: -20px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+
+        .node .line { width: 25px; height: 2px; background-color: #475569; border-radius: 1px; }
+        .node .dot { width: 4px; height: 4px; background-color: #475569; border-radius: 50%; align-self: flex-start; margin-left: 10px; }
+
+        /* Particle System */
+        .particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 3;
+            transition: left linear;
+            display: flex;
+            justify-content: center;
+        }
+
+        .particle-label {
+            position: absolute;
+            top: -20px;
+            font-size: 0.7rem;
+            white-space: nowrap;
+            font-weight: bold;
+        }
+
+        /* Center Icons (TLS & SSH) */
+        .center-icon {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .tls-lock { color: var(--tls-color); }
+        .ssh-term { color: var(--ssh-color); }
+        .center-icon svg { width: 24px; height: 24px; fill: currentColor; }
+
+        .footer-text {
+            position: absolute;
+            bottom: 15px;
+            left: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        .udp .footer-text { color: var(--udp-color); }
+        .tls .footer-text { color: var(--tls-color); }
+        .ssh .footer-text { color: var(--ssh-color); }
+        .ftp .footer-text { color: var(--ftp-color); }
+
+    </style>
+</head>
+<body>
+
+    <!-- Controles de Velocidade -->
+    <div class="controls">
+        <label for="speedControl">Velocidade Global:</label>
+        <!-- 0.5x até 3x a velocidade -->
+        <input type="range" id="speedControl" min="0.5" max="3" step="0.1" value="1">
+        <span id="speedValue">1.0x</span>
+    </div>
+
+    <div class="dashboard">
+        <!-- HTTP/HTTPS -->
+        <div class="card http" id="card-http">
+            <div class="card-header">
+                <h2>HTTP/HTTPS</h2>
+                <p>Web request ↔ response</p>
+                <div class="divider"></div>
+            </div>
+            <div class="animation-area">
+                <div class="track"></div>
+                <div class="node client" data-label="CLIENT"><div class="line"></div><div class="line"></div><div class="dot"></div></div>
+                <div class="node server" data-label="SERVER"><div class="line"></div><div class="line"></div><div class="dot"></div></div>
+            <div class="particle" style="background-color: var(--http-color); box-shadow: 0 0 8px var(--http-color); left: 60px; margin-top: 0px; transition-duration: 1000ms;"><div class="particle-label" style="color: var(--http-color);">200 OK</div></div></div>
+        </div>
+
+        <!-- TCP -->
+        <div class="card tcp" id="card-tcp">
+            <div class="card-header">
+                <h2>TCP</h2>
+                <p>Reliable 3-way handshake</p>
+                <div class="divider"></div>
+            </div>
+            <div class="animation-area">
+                <div class="track"></div>
+                <div class="node client" data-label="CLIENT"><div class="line"></div><div class="line"></div><div class="dot"></div></div>
+                <div class="node server" data-label="SERVER"><div class="line"></div><div class="line"></div><div class="dot"></div></div>
+            <div class="particle" style="background-color: var(--tcp-color); box-shadow: 0 0 8px var(--tcp-color); left: 271px; margin-top: 0px; transition-duration: 800ms;"><div class="particle-label" style="color: var(--tcp-color);">SYN</div></div></div>
+        </div>
+
+        <!-- UDP -->
+        <div class="card udp" id="card-udp">
+            <div class="card-header">
+                <h2>UDP</h2>
+                <p>Fast, no acknowledgement</p>
+                <div class="divider"></div>
+            </div>
+            <div class="animation-area">
+                <div class="track"></div>
+                <div class="node client" data-label="CLIENT"><div class="line"></div><div class="line"></div><div class="dot"></div></div>
+                <div class="node server" data-label="SERVER"><div class="line"></div><div class="line"></div><div class="dot"></div></div>
+            <div class="particle" style="background-color: var(--udp-color); box-shadow: 0 0 8px var(--udp-color); left: 291px; margin-top: -19.8769px; transition-duration: 879.678ms;"></div><div class="particle" style="background-color: var(--udp-color); box-shadow: 0 0 8px var(--udp-color); left: 291px; margin-top: 6.02205px; transition-duration: 809.433ms;"></div></div>
+            <div class="footer-text">NO ACK</div>
+        </div>
+
+        <!-- TLS -->
+        <div class="card tls" id="card-tls">
+            <div class="card-header">
+                <h2>TLS</h2>
+                <p>Encrypted secure session</p>
+                <div class="divider"></div>
+            </div>
+            <div class="animation-area">
+                <div class="track"></div>
+                <div class="center-icon tls-lock" id="tls-lock-icon" style="opacity: 1;">
+                    <svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"></path></svg>
+                </div>
+                <div class="node client" data-label="CLIENT"><div class="line"></div><div class="line"></div><div class="dot"></div></div>
+                <div class="node server" data-label="SERVER"><div class="line"></div><div class="line"></div><div class="dot"></div></div>
+            <div class="particle" style="background-color: var(--tls-color); box-shadow: 0 0 8px var(--tls-color); left: 271px; margin-top: 0px; transition-duration: 1000ms;"><div class="particle-label" style="color: var(--tls-color);">***</div></div></div>
+            <div class="footer-text" id="tls-footer">SECURE SESSION</div>
+        </div>
+
+        <!-- SSH -->
+        <div class="card ssh" id="card-ssh">
+            <div class="card-header">
+                <h2>SSH</h2>
+                <p>Secure Shell / Remote execution</p>
+                <div class="divider"></div>
+            </div>
+            <div class="animation-area">
+                <div class="track"></div>
+                <div class="center-icon ssh-term" id="ssh-term-icon" style="opacity: 0;">
+                    <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8h16v10zm-2-1h-6v-2h6v2zM7.5 17l-1.41-1.41L8.67 12l-2.58-3.59L7.5 7l4 5-4 5z"></path></svg>
+                </div>
+                <div class="node client" data-label="CLIENT"><div class="line"></div><div class="line"></div><div class="dot"></div></div>
+                <div class="node server" data-label="SERVER"><div class="line"></div><div class="line"></div><div class="dot"></div></div>
+            <div class="particle" style="background-color: rgb(148, 163, 184); box-shadow: rgb(148, 163, 184) 0px 0px 8px; left: 271px; margin-top: 0px; transition-duration: 800ms;"><div class="particle-label" style="color: rgb(148, 163, 184);">KEX</div></div></div>
+            <div class="footer-text" id="ssh-footer"></div>
+        </div>
+
+        <!-- FTP -->
+        <div class="card ftp" id="card-ftp">
+            <div class="card-header">
+                <h2>FTP</h2>
+                <p>File Transfer Protocol (Ctrl + Data)</p>
+                <div class="divider"></div>
+            </div>
+            <div class="animation-area">
+                <div class="track"></div>
+                <div class="node client" data-label="CLIENT"><div class="line"></div><div class="line"></div><div class="dot"></div></div>
+                <div class="node server" data-label="SERVER"><div class="line"></div><div class="line"></div><div class="dot"></div></div>
+            <div class="particle" style="background-color: var(--ftp-color); box-shadow: 0 0 8px var(--ftp-color); left: 60px; margin-top: -18px; transition-duration: 1200ms;"><div class="particle-label" style="color: var(--ftp-color);">file blocks</div></div><div class="particle" style="background-color: var(--ftp-color); box-shadow: 0 0 8px var(--ftp-color); left: 60px; margin-top: -6px; transition-duration: 1200ms;"></div><div class="particle" style="background-color: var(--ftp-color); box-shadow: 0 0 8px var(--ftp-color); left: 60px; margin-top: 6px; transition-duration: 1200ms;"></div></div>
+            <div class="footer-text" id="ftp-footer">DATA CHANNEL (Port 20)</div>
+        </div>
+    </div>
+
+    <script>
+        // === GLOBAL SPEED CONTROL ===
+        let speedMultiplier = 1; // 1 = Normal, <1 = Faster, >1 = Slower
+        
+        const speedControl = document.getElementById('speedControl');
+        const speedValue = document.getElementById('speedValue');
+
+        speedControl.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            speedValue.innerText = val.toFixed(1) + 'x';
+            // Se o slider marca 2x, o tempo deve ser dividido por 2.
+            speedMultiplier = 1 / val;
+        });
+
+        // Wrapper inteligente para aplicar a velocidade ao setTimeout
+        const sleep = ms => new Promise(r => setTimeout(r, ms * speedMultiplier));
+
+        // Core animation function aware of global speed
+        function animateParticle({ container, color, startX, endX, baseDuration, labelText = '', offsetY = 0 }) {
+            return new Promise(resolve => {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.backgroundColor = color;
+                particle.style.boxShadow = `0 0 8px ${color}`;
+                particle.style.left = `${startX}px`;
+                particle.style.marginTop = `${offsetY}px`;
+                
+                // Aplica a velocidade global
+                const actualDuration = baseDuration * speedMultiplier;
+                particle.style.transitionDuration = `${actualDuration}ms`;
+
+                if (labelText) {
+                    const label = document.createElement('div');
+                    label.className = 'particle-label';
+                    label.style.color = color;
+                    label.textContent = labelText;
+                    particle.appendChild(label);
+                }
+
+                container.querySelector('.animation-area').appendChild(particle);
+
+                // Reflow
+                void particle.offsetWidth;
+
+                particle.style.left = `${endX}px`;
+
+                setTimeout(() => {
+                    particle.remove();
+                    resolve();
+                }, actualDuration);
+            });
+        }
+
+        // ==========================================
+        // PROTOCOL ANIMATIONS (Looping continuously)
+        // ==========================================
+
+        async function runHTTP() {
+            const container = document.getElementById('card-http');
+            const color = 'var(--http-color)';
+            const clientX = 60; const serverX = container.offsetWidth - 80;
+
+            while (true) {
+                await animateParticle({ container, color, startX: clientX, endX: serverX, baseDuration: 1000, labelText: 'GET /' });
+                await sleep(200);
+                await animateParticle({ container, color, startX: serverX, endX: clientX, baseDuration: 1000, labelText: '200 OK' });
+                await sleep(800);
+            }
+        }
+
+        async function runTCP() {
+            const container = document.getElementById('card-tcp');
+            const color = 'var(--tcp-color)';
+            const clientX = 60; const serverX = container.offsetWidth - 80;
+
+            while (true) {
+                await animateParticle({ container, color, startX: clientX, endX: serverX, baseDuration: 800, labelText: 'SYN' });
+                await animateParticle({ container, color, startX: serverX, endX: clientX, baseDuration: 800, labelText: 'SYN-ACK' });
+                await animateParticle({ container, color, startX: clientX, endX: serverX, baseDuration: 800, labelText: 'ACK' });
+                await sleep(1000);
+            }
+        }
+
+        async function runUDP() {
+            const container = document.getElementById('card-udp');
+            const color = 'var(--udp-color)';
+            const clientX = 60; const serverX = container.offsetWidth - 80;
+
+            // Loop recursivo para respeitar mudanças de velocidade em tempo real
+            const loop = async () => {
+                const offsetY = (Math.random() - 0.5) * 40;
+                const baseDuration = 600 + Math.random() * 400;
+                animateParticle({ container, color, startX: clientX, endX: serverX + 20, baseDuration, offsetY });
+                
+                await sleep(300); // Frequência dos tiros
+                requestAnimationFrame(loop);
+            };
+            loop();
+        }
+
+        async function runTLS() {
+            const container = document.getElementById('card-tls');
+            const color = 'var(--tls-color)';
+            const clientX = 60; const serverX = container.offsetWidth - 80;
+            const lockIcon = document.getElementById('tls-lock-icon');
+            const footerText = document.getElementById('tls-footer');
+
+            while (true) {
+                footerText.textContent = "";
+                lockIcon.style.opacity = "0";
+
+                await animateParticle({ container, color: '#94a3b8', startX: clientX, endX: serverX, baseDuration: 800, labelText: 'Client Hello' });
+                await animateParticle({ container, color: '#94a3b8', startX: serverX, endX: clientX, baseDuration: 800, labelText: 'Server Hello' });
+                
+                lockIcon.style.opacity = "1";
+                footerText.textContent = "SECURE SESSION";
+                await sleep(500);
+
+                for(let i=0; i<2; i++) {
+                    animateParticle({ container, color, startX: clientX, endX: serverX, baseDuration: 1000, labelText: '***' });
+                    await sleep(500);
+                    animateParticle({ container, color, startX: serverX, endX: clientX, baseDuration: 1000, labelText: '***' });
+                    await sleep(500);
+                }
+                await sleep(1500);
+            }
+        }
+
+        async function runSSH() {
+            const container = document.getElementById('card-ssh');
+            const color = 'var(--ssh-color)';
+            const clientX = 60; const serverX = container.offsetWidth - 80;
+            const termIcon = document.getElementById('ssh-term-icon');
+            const footerText = document.getElementById('ssh-footer');
+
+            while (true) {
+                footerText.textContent = "";
+                termIcon.style.opacity = "0";
+
+                // Troca de chaves
+                await animateParticle({ container, color: '#94a3b8', startX: clientX, endX: serverX, baseDuration: 800, labelText: 'KEX' });
+                
+                termIcon.style.opacity = "1";
+                footerText.textContent = "ENCRYPTED TUNNEL";
+                await sleep(300);
+
+                // Envio de Comando e resposta
+                await animateParticle({ container, color, startX: clientX, endX: serverX, baseDuration: 800, labelText: 'ls -la' });
+                await animateParticle({ container, color, startX: serverX, endX: clientX, baseDuration: 1000, labelText: 'drwxr-xr-x' });
+                
+                await sleep(1500);
+            }
+        }
+
+        async function runFTP() {
+            const container = document.getElementById('card-ftp');
+            const color = 'var(--ftp-color)';
+            const clientX = 60; const serverX = container.offsetWidth - 80;
+            const footerText = document.getElementById('ftp-footer');
+
+            while (true) {
+                footerText.textContent = "CTRL CHANNEL (Port 21)";
+                // Canal de Controle
+                await animateParticle({ container, color: '#94a3b8', startX: clientX, endX: serverX, baseDuration: 1000, labelText: 'RETR data.zip' });
+                
+                footerText.textContent = "DATA CHANNEL (Port 20)";
+                await sleep(200);
+
+                // Canal de Dados (Enviando arquivo em pedaços paralelos)
+                for(let i=0; i<4; i++) {
+                    const offsetY = (i * 12) - 18; // Espalha verticalmente para simular banda
+                    animateParticle({ container, color, startX: serverX, endX: clientX, baseDuration: 1200, offsetY, labelText: i===0 ? 'file blocks' : '' });
+                    await sleep(200);
+                }
+                
+                await sleep(2000);
+            }
+        }
+
+        // Init
+        window.addEventListener('DOMContentLoaded', () => {
+            runHTTP();
+            runTCP();
+            runUDP();
+            runTLS();
+            runSSH();
+            runFTP();
+        });
+    </script>
+
+</body></html>

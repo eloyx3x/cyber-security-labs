@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<!-- saved from url=(0063)file:///C:/Users/eloyg/Downloads/gemini-code-1787619684015.html -->
+<html lang="pt-BR"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Scanner Animation v4</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #3b82f6;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --terminal-bg: #020617;
+            --terminal-text: #4ade80;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Consolas', 'Courier New', monospace; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .header {
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--panel-bg);
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            border: 1px solid #334155;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .header h1 { font-size: 1.5rem; color: var(--text-main); }
+
+        .controls { 
+            display: flex; 
+            gap: 1rem; 
+            align-items: center; 
+            flex-wrap: wrap;
+        }
+
+        button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        button:hover { filter: brightness(1.1); }
+        button:disabled { background-color: #475569; cursor: not-allowed; }
+
+        /* Estilos do Controle de Velocidade */
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: #0f172a;
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            border: 1px solid #334155;
+        }
+
+        .speed-control label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: bold;
+        }
+
+        .speed-control input[type="range"] {
+            cursor: pointer;
+            accent-color: var(--accent);
+            width: 100px;
+        }
+
+        .speed-control span {
+            font-weight: bold;
+            color: var(--success);
+            min-width: 40px;
+            text-align: right;
+            font-size: 0.9rem;
+        }
+
+        .network-area {
+            width: 100%;
+            max-width: 1000px;
+            height: 400px;
+            background: var(--panel-bg);
+            border-radius: 8px;
+            position: relative;
+            border: 1px solid #334155;
+            margin-bottom: 2rem;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+        }
+
+        .machine {
+            height: 220px;
+            background: #0f172a;
+            border: 2px solid #475569;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        #scanner { width: 140px; }
+
+        #target {
+            width: 220px; 
+            align-items: flex-end; 
+            padding-right: 20px;
+        }
+
+        .machine-label {
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        #target .machine-label { text-align: right; }
+        
+        .machine-ip {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .ports-container {
+            position: absolute;
+            left: -12px;
+            top: 10px;
+            bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+        }
+
+        .port {
+            width: 24px;
+            height: 24px;
+            background: #1e293b;
+            border: 2px solid #475569;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.6rem;
+            font-weight: bold;
+            color: var(--text-muted);
+            transition: 0.3s;
+            position: relative;
+        }
+        
+        .port.open { border-color: var(--success); color: var(--success); box-shadow: 0 0 10px rgba(34, 197, 94, 0.4); }
+        .port.closed { border-color: var(--danger); color: var(--danger); }
+
+        .port-label {
+            position: absolute;
+            left: 36px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .track-container {
+            position: absolute;
+            left: 160px;
+            right: 240px;
+            top: 0;
+            bottom: 0;
+            z-index: 1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            z-index: 5;
+            transition: left linear;
+        }
+        
+        .particle-label {
+            position: absolute;
+            top: -20px;
+            left: -10px;
+            font-size: 0.75rem;
+            color: white;
+            white-space: nowrap;
+        }
+
+        .terminal {
+            width: 100%;
+            max-width: 1000px;
+            height: 200px;
+            background: var(--terminal-bg);
+            border-radius: 8px;
+            border: 1px solid #334155;
+            padding: 1rem;
+            overflow-y: auto;
+            color: var(--terminal-text);
+            font-size: 0.9rem;
+            line-height: 1.4;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .terminal .log-time { color: #64748b; margin-right: 10px; }
+        .terminal .log-open { color: var(--success); }
+        .terminal .log-closed { color: var(--danger); }
+        .terminal .log-info { color: #38bdf8; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Network Scan Simulator (Nmap Style)</h1>
+        <div class="controls">
+            <button id="btnScanSeq">Scan Sequencial</button>
+            <button id="btnScanAll">Scan Simultâneo</button>
+            <button id="btnReset">Resetar</button>
+            
+            <div class="speed-control">
+                <label for="speedSlider">Velocidade:</label>
+                <input type="range" id="speedSlider" min="0.5" max="3" step="0.1" value="1">
+                <span id="speedValue">0.7x</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="network-area" id="networkArea">
+        <div class="machine" id="scanner">
+            <div class="machine-label">PC Scanner<br>💻</div>
+            <div class="machine-ip">192.168.1.100</div>
+        </div>
+        
+        <div class="track-container" id="trackContainer"></div>
+
+        <div class="machine" id="target">
+            <div class="ports-container" id="portsContainer"><div class="port open" id="port-21">21<div class="port-label">FTP</div></div><div class="port open" id="port-22">22<div class="port-label">SSH</div></div><div class="port closed" id="port-23">23<div class="port-label">Telnet</div></div><div class="port open" id="port-53">53<div class="port-label">DNS</div></div><div class="port open" id="port-80">80<div class="port-label">HTTP</div></div><div class="port open" id="port-443">443<div class="port-label">HTTPS</div></div><div class="port closed" id="port-3306">3306<div class="port-label">MySQL</div></div></div>
+            <div class="machine-label">Target Server<br>🖥️</div>
+            <div class="machine-ip">10.0.0.50</div>
+        </div>
+    </div>
+
+    <div class="terminal" id="terminal">
+        <div><span class="log-info">Nmap scan initiated...</span></div>
+    <div><span class="log-time">[22:01:45]</span> <span class="log-info">Starting sequential scan on target 10.0.0.50...</span></div><div><span class="log-time">[22:01:45]</span> <span class="log-info">Probing port 21...</span></div><div><span class="log-time">[22:01:45]</span> <span class="log-open">Discovered open port 21/tcp (FTP)</span></div><div><span class="log-time">[22:01:46]</span> <span class="log-info">Probing port 22...</span></div><div><span class="log-time">[22:01:47]</span> <span class="log-open">Discovered open port 22/tcp (SSH)</span></div><div><span class="log-time">[22:01:48]</span> <span class="log-info">Probing port 23...</span></div><div><span class="log-time">[22:01:49]</span> <span class="log-closed">Port 23/tcp is closed</span></div><div><span class="log-time">[22:01:50]</span> <span class="log-info">Probing port 53...</span></div><div><span class="log-time">[22:01:51]</span> <span class="log-open">Discovered open port 53/tcp (DNS)</span></div><div><span class="log-time">[22:01:52]</span> <span class="log-info">Probing port 80...</span></div><div><span class="log-time">[22:01:53]</span> <span class="log-open">Discovered open port 80/tcp (HTTP)</span></div><div><span class="log-time">[22:01:54]</span> <span class="log-info">Probing port 443...</span></div><div><span class="log-time">[22:01:55]</span> <span class="log-open">Discovered open port 443/tcp (HTTPS)</span></div><div><span class="log-time">[22:01:56]</span> <span class="log-info">Probing port 3306...</span></div><div><span class="log-time">[22:01:56]</span> <span class="log-closed">Port 3306/tcp is closed</span></div><div><span class="log-time">[22:01:57]</span> <span class="log-info">Scan complete.</span></div><div><span class="log-time">[22:01:59]</span> <span class="log-info">Starting concurrent scan (SYN flood style) on 10.0.0.50...</span></div><div><span class="log-time">[22:02:00]</span> <span class="log-open">Discovered open port 21/tcp (FTP)</span></div><div><span class="log-time">[22:02:00]</span> <span class="log-open">Discovered open port 22/tcp (SSH)</span></div><div><span class="log-time">[22:02:00]</span> <span class="log-open">Discovered open port 80/tcp (HTTP)</span></div><div><span class="log-time">[22:02:01]</span> <span class="log-open">Discovered open port 53/tcp (DNS)</span></div><div><span class="log-time">[22:02:01]</span> <span class="log-open">Discovered open port 443/tcp (HTTPS)</span></div><div><span class="log-time">[22:02:01]</span> <span class="log-closed">Port 23/tcp is closed</span></div><div><span class="log-time">[22:02:01]</span> <span class="log-closed">Port 3306/tcp is closed</span></div><div><span class="log-time">[22:02:01]</span> <span class="log-info">Scan complete.</span></div><div><span class="log-time">[22:02:09]</span> <span class="log-info">Starting concurrent scan (SYN flood style) on 10.0.0.50...</span></div><div><span class="log-time">[22:02:10]</span> <span class="log-open">Discovered open port 22/tcp (SSH)</span></div><div><span class="log-time">[22:02:10]</span> <span class="log-open">Discovered open port 80/tcp (HTTP)</span></div><div><span class="log-time">[22:02:10]</span> <span class="log-open">Discovered open port 53/tcp (DNS)</span></div><div><span class="log-time">[22:02:10]</span> <span class="log-open">Discovered open port 21/tcp (FTP)</span></div><div><span class="log-time">[22:02:10]</span> <span class="log-open">Discovered open port 443/tcp (HTTPS)</span></div><div><span class="log-time">[22:02:10]</span> <span class="log-closed">Port 23/tcp is closed</span></div><div><span class="log-time">[22:02:10]</span> <span class="log-closed">Port 3306/tcp is closed</span></div><div><span class="log-time">[22:02:12]</span> <span class="log-info">Scan complete.</span></div><div><span class="log-time">[22:02:15]</span> <span class="log-info">Starting sequential scan on target 10.0.0.50...</span></div><div><span class="log-time">[22:02:15]</span> <span class="log-info">Probing port 21...</span></div><div><span class="log-time">[22:02:16]</span> <span class="log-open">Discovered open port 21/tcp (FTP)</span></div><div><span class="log-time">[22:02:17]</span> <span class="log-info">Probing port 22...</span></div><div><span class="log-time">[22:02:19]</span> <span class="log-open">Discovered open port 22/tcp (SSH)</span></div><div><span class="log-time">[22:02:20]</span> <span class="log-info">Probing port 23...</span></div><div><span class="log-time">[22:02:21]</span> <span class="log-closed">Port 23/tcp is closed</span></div><div><span class="log-time">[22:02:23]</span> <span class="log-info">Probing port 53...</span></div><div><span class="log-time">[22:02:24]</span> <span class="log-open">Discovered open port 53/tcp (DNS)</span></div><div><span class="log-time">[22:02:25]</span> <span class="log-info">Probing port 80...</span></div><div><span class="log-time">[22:02:26]</span> <span class="log-open">Discovered open port 80/tcp (HTTP)</span></div><div><span class="log-time">[22:02:28]</span> <span class="log-info">Probing port 443...</span></div><div><span class="log-time">[22:02:29]</span> <span class="log-open">Discovered open port 443/tcp (HTTPS)</span></div><div><span class="log-time">[22:02:30]</span> <span class="log-info">Probing port 3306...</span></div><div><span class="log-time">[22:02:32]</span> <span class="log-closed">Port 3306/tcp is closed</span></div><div><span class="log-time">[22:02:33]</span> <span class="log-info">Scan complete.</span></div></div>
+
+    <script>
+        const portsDef = [
+            { port: 21, protocol: 'FTP', color: '#f43f5e', state: 'open' },
+            { port: 22, protocol: 'SSH', color: '#2dd4bf', state: 'open' },
+            { port: 23, protocol: 'Telnet', color: '#94a3b8', state: 'closed' },
+            { port: 53, protocol: 'DNS', color: '#fbbf24', state: 'open' },
+            { port: 80, protocol: 'HTTP', color: '#38bdf8', state: 'open' },
+            { port: 443, protocol: 'HTTPS', color: '#c084fc', state: 'open' },
+            { port: 3306, protocol: 'MySQL', color: '#94a3b8', state: 'closed' }
+        ];
+
+        const portsContainer = document.getElementById('portsContainer');
+        const trackContainer = document.getElementById('trackContainer');
+        const terminal = document.getElementById('terminal');
+        const btnSeq = document.getElementById('btnScanSeq');
+        const btnAll = document.getElementById('btnScanAll');
+        const btnReset = document.getElementById('btnReset');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedValue = document.getElementById('speedValue');
+
+        let isScanning = false;
+        let speedMultiplier = 1;
+
+        // Atualiza a variável global de velocidade
+        speedSlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            speedValue.innerText = val.toFixed(1) + 'x';
+            speedMultiplier = 1 / val;
+        });
+
+        function init() {
+            portsContainer.innerHTML = '';
+            portsDef.forEach((p) => {
+                const portEl = document.createElement('div');
+                portEl.className = 'port';
+                portEl.id = `port-${p.port}`;
+                portEl.innerText = p.port;
+                
+                const labelEl = document.createElement('div');
+                labelEl.className = 'port-label';
+                labelEl.innerText = p.protocol;
+                portEl.appendChild(labelEl);
+
+                portsContainer.appendChild(portEl);
+            });
+        }
+
+        function logTerminal(msg, type = 'info') {
+            const time = new Date().toLocaleTimeString('pt-BR');
+            const div = document.createElement('div');
+            div.innerHTML = `<span class="log-time">[${time}]</span> <span class="log-${type}">${msg}</span>`;
+            terminal.appendChild(div);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        // Função de delay que respeita o multiplicador de velocidade
+        const sleep = ms => new Promise(r => setTimeout(r, ms * speedMultiplier));
+
+        async function animateProbe(portInfo) {
+            return new Promise(async (resolve) => {
+                const startX = 0;
+                
+                const portEl = document.getElementById(`port-${portInfo.port}`);
+                const portRect = portEl.getBoundingClientRect();
+                const trackRect = trackContainer.getBoundingClientRect();
+                
+                const yPos = portRect.top - trackRect.top + (portRect.height / 2) - 5; 
+                const endX = portRect.left - trackRect.left - 10;
+                
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.backgroundColor = portInfo.color;
+                particle.style.boxShadow = `0 0 10px ${portInfo.color}`;
+                particle.style.top = `${yPos}px`;
+                particle.style.left = `${startX}px`;
+                
+                // Aplica a velocidade ao CSS Transition
+                const baseDuration = 800;
+                particle.style.transitionDuration = `${baseDuration * speedMultiplier}ms`;
+                
+                const label = document.createElement('div');
+                label.className = 'particle-label';
+                label.innerText = 'SYN';
+                particle.appendChild(label);
+                
+                trackContainer.appendChild(particle);
+                
+                void particle.offsetWidth;
+                particle.style.left = `${endX}px`;
+                
+                // Aguarda o tempo base (o sleep já multiplica pela velocidade internamente)
+                await sleep(baseDuration);
+                
+                if(portInfo.state === 'open') {
+                    portEl.classList.add('open');
+                    particle.style.backgroundColor = '#22c55e'; 
+                    label.innerText = 'SYN-ACK';
+                    logTerminal(`Discovered open port ${portInfo.port}/tcp (${portInfo.protocol})`, 'open');
+                } else {
+                    portEl.classList.add('closed');
+                    particle.style.backgroundColor = '#ef4444'; 
+                    label.innerText = 'RST';
+                    logTerminal(`Port ${portInfo.port}/tcp is closed`, 'closed');
+                }
+                
+                // Volta o pacote
+                particle.style.transitionDuration = `${baseDuration * speedMultiplier}ms`;
+                particle.style.left = `${startX}px`;
+                await sleep(baseDuration);
+                
+                particle.remove();
+                resolve();
+            });
+        }
+
+        async function runSequentialScan() {
+            if (isScanning) return;
+            isScanning = true;
+            btnSeq.disabled = true; btnAll.disabled = true;
+            
+            logTerminal('Starting sequential scan on target 10.0.0.50...', 'info');
+            
+            for (let i = 0; i < portsDef.length; i++) {
+                logTerminal(`Probing port ${portsDef[i].port}...`, 'info');
+                await animateProbe(portsDef[i]);
+                await sleep(200);
+            }
+            
+            logTerminal('Scan complete.', 'info');
+            isScanning = false;
+            btnSeq.disabled = false; btnAll.disabled = false;
+        }
+
+        async function runConcurrentScan() {
+            if (isScanning) return;
+            isScanning = true;
+            btnSeq.disabled = true; btnAll.disabled = true;
+            
+            logTerminal('Starting concurrent scan (SYN flood style) on 10.0.0.50...', 'info');
+            
+            const promises = portsDef.map((port) => {
+                const delay = Math.random() * 500;
+                return new Promise(async (resolve) => {
+                    await sleep(delay);
+                    await animateProbe(port);
+                    resolve();
+                });
+            });
+            
+            await Promise.all(promises);
+            
+            logTerminal('Scan complete.', 'info');
+            isScanning = false;
+            btnSeq.disabled = false; btnAll.disabled = false;
+        }
+
+        btnSeq.addEventListener('click', runSequentialScan);
+        btnAll.addEventListener('click', runConcurrentScan);
+        btnReset.addEventListener('click', () => {
+            if(isScanning) return; 
+            terminal.innerHTML = '<div><span class="log-info">Nmap scan initiated...</span></div>';
+            document.querySelectorAll('.port').forEach(el => {
+                el.classList.remove('open', 'closed');
+            });
+        });
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+
+</body></html>

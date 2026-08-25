@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vulnerability & Patch Lab</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #10b981;
+            --hacker-bg: #020617;
+            --border-color: #334155;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+
+        body { background-color: var(--bg-color); color: var(--text-main); padding: 2rem; display: flex; flex-direction: column; align-items: center; }
+
+        .header { text-align: center; margin-bottom: 2rem; max-width: 900px; }
+        .header h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+        .header p { color: var(--text-muted); font-size: 0.95rem; }
+
+        .lab-container { display: flex; flex-direction: column; gap: 2rem; width: 100%; max-width: 1100px; }
+
+        /* Card Styles */
+        .vuln-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
+            transition: border-color 0.3s;
+        }
+
+        .vuln-card.patched { border-color: var(--success); }
+
+        .card-header {
+            padding: 1rem 1.5rem;
+            background: rgba(0,0,0,0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .vuln-info h2 { font-size: 1.2rem; display: flex; align-items: center; gap: 10px; }
+        .vuln-info p { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
+        
+        .badge {
+            font-size: 0.7rem; padding: 2px 8px; border-radius: 12px; font-weight: bold;
+            background: rgba(245, 158, 11, 0.2); color: var(--warning); border: 1px solid var(--warning);
+        }
+        .patched .badge {
+            background: rgba(16, 185, 129, 0.2); color: var(--success); border-color: var(--success);
+        }
+
+        .controls { display: flex; gap: 1rem; }
+        
+        button {
+            padding: 0.5rem 1rem; border-radius: 6px; font-weight: bold; font-size: 0.85rem;
+            border: none; cursor: pointer; transition: 0.2s;
+        }
+        .btn-attack { background: #3b82f6; color: white; }
+        .btn-attack:hover:not(:disabled) { background: #2563eb; }
+        .btn-patch { background: transparent; border: 1px solid var(--success); color: var(--success); }
+        .btn-patch:hover { background: rgba(16, 185, 129, 0.1); }
+        .patched .btn-patch { background: var(--success); color: white; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Stage area */
+        .stage-area { display: grid; grid-template-columns: 3fr 2fr; height: 180px; }
+
+        .network {
+            position: relative; border-right: 1px solid var(--border-color);
+            display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
+            overflow: hidden;
+        }
+
+        .node {
+            width: 60px; height: 70px; background: var(--bg-color); border: 2px solid var(--border-color);
+            border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2;
+        }
+        .node-icon { font-size: 1.5rem; }
+        .node-label { font-size: 0.65rem; font-weight: bold; margin-top: 5px; }
+
+        .hacker-node {
+            position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+            border-color: var(--danger); width: 70px; height: 60px;
+        }
+
+        .wire { position: absolute; left: 80px; right: 80px; height: 2px; background: var(--border-color); z-index: 1; }
+        .wire-sniff { position: absolute; left: 50%; top: 50%; bottom: 60px; width: 2px; border-left: 2px dashed var(--danger); z-index: 1; }
+
+        .packet {
+            position: absolute; padding: 4px 8px; border-radius: 4px; font-family: monospace; font-size: 0.75rem;
+            font-weight: bold; color: white; z-index: 5; white-space: nowrap; transition: left linear, top linear;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .terminal {
+            background: var(--hacker-bg); padding: 1rem; overflow-y: auto;
+            font-family: 'Consolas', monospace; font-size: 0.8rem; color: #22c55e;
+        }
+        .log-sys { color: #64748b; }
+        .log-vuln { color: var(--warning); }
+        .log-success { color: var(--danger); font-weight: bold; }
+        .log-safe { color: var(--success); }
+
+        @media (max-width: 768px) { .stage-area { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; height: 360px; } .network { border-right: none; border-bottom: 1px solid var(--border-color); } }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Vulnerability & Patch Lab</h1>
+        <p>Simulação de ataques históricos focados em suítes de cifras e versões de protocolos obsoletos.</p>
+    </div>
+
+    <div class="lab-container">
+        
+        <!-- POODLE -->
+        <div class="vuln-card" id="card-poodle">
+            <div class="card-header">
+                <div class="vuln-info">
+                    <h2>POODLE (CVE-2014-3566) <span class="badge" id="badge-poodle">SSL 3.0 / CBC</span></h2>
+                    <p>Explora o mecanismo de fallback para o SSL 3.0 e quebra a criptografia usando ataques de preenchimento (Padding Oracle) em cifras CBC.</p>
+                </div>
+                <div class="controls">
+                    <button class="btn-attack" onclick="runAttack('poodle')">Simular Ataque</button>
+                    <button class="btn-patch" onclick="togglePatch('poodle')">Exigir TLS 1.2+</button>
+                </div>
+            </div>
+            <div class="stage-area">
+                <div class="network" id="net-poodle">
+                    <div class="wire"></div><div class="wire-sniff"></div>
+                    <div class="node"><div class="node-icon">👤</div><div class="node-label">Cliente</div></div>
+                    <div class="node hacker-node"><div class="node-icon">🥷</div><div class="node-label">MitM</div></div>
+                    <div class="node"><div class="node-icon">🏢</div><div class="node-label">Servidor</div></div>
+                </div>
+                <div class="terminal" id="term-poodle">
+                    <div class="log-sys">[*] POODLE module loaded. Waiting for traffic...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sweet32 -->
+        <div class="vuln-card" id="card-sweet32">
+            <div class="card-header">
+                <div class="vuln-info">
+                    <h2>Sweet32 (CVE-2016-2183) <span class="badge" id="badge-sweet32">Cifras 64-bit (3DES)</span></h2>
+                    <p>Ataque de colisão que afeta cifras de bloco de 64 bits (como 3DES e Blowfish) quando um grande volume de dados é transferido na mesma sessão.</p>
+                </div>
+                <div class="controls">
+                    <button class="btn-attack" onclick="runAttack('sweet32')">Simular Ataque</button>
+                    <button class="btn-patch" onclick="togglePatch('sweet32')">Exigir AES (128+ bit)</button>
+                </div>
+            </div>
+            <div class="stage-area">
+                <div class="network" id="net-sweet32">
+                    <div class="wire"></div><div class="wire-sniff"></div>
+                    <div class="node"><div class="node-icon">👤</div><div class="node-label">Cliente</div></div>
+                    <div class="node hacker-node"><div class="node-icon">🥷</div><div class="node-label">MitM</div></div>
+                    <div class="node"><div class="node-icon">🏢</div><div class="node-label">Servidor</div></div>
+                </div>
+                <div class="terminal" id="term-sweet32">
+                    <div class="log-sys">[*] Sweet32 collision script ready...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bar Mitzvah -->
+        <div class="vuln-card" id="card-bar">
+            <div class="card-header">
+                <div class="vuln-info">
+                    <h2>Bar Mitzvah (CVE-2015-2808) <span class="badge" id="badge-bar">Cifra RC4</span></h2>
+                    <p>Explora fraquezas inerentes ao algoritmo de fluxo RC4 (Invariance weakness), permitindo a recuperação de chaves sem necessidade de força bruta complexa.</p>
+                </div>
+                <div class="controls">
+                    <button class="btn-attack" onclick="runAttack('bar')">Simular Ataque</button>
+                    <button class="btn-patch" onclick="togglePatch('bar')">Desabilitar RC4</button>
+                </div>
+            </div>
+            <div class="stage-area">
+                <div class="network" id="net-bar">
+                    <div class="wire"></div><div class="wire-sniff"></div>
+                    <div class="node"><div class="node-icon">👤</div><div class="node-label">Cliente</div></div>
+                    <div class="node hacker-node"><div class="node-icon">🥷</div><div class="node-label">MitM</div></div>
+                    <div class="node"><div class="node-icon">🏢</div><div class="node-label">Servidor</div></div>
+                </div>
+                <div class="terminal" id="term-bar">
+                    <div class="log-sys">[*] RC4 vulnerability scanner active...</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Configurações e estados de cada vulnerabilidade
+        const state = {
+            'poodle': { isPatched: false, vulnLabel: 'SSL 3.0 / CBC', patchLabel: 'TLS 1.2 / GCM' },
+            'sweet32': { isPatched: false, vulnLabel: 'Cifras 64-bit (3DES)', patchLabel: 'AES-256 GCM' },
+            'bar': { isPatched: false, vulnLabel: 'Cifra RC4', patchLabel: 'ChaCha20-Poly1305' }
+        };
+
+        const logs = {
+            'poodle': {
+                vuln: [
+                    { t: 0, m: '[*] Interceptando Handshake...', c: 'log-sys' },
+                    { t: 800, m: '[!] Forçando Fallback (Downgrade) para SSL 3.0...', c: 'log-vuln' },
+                    { t: 1600, m: '[*] Servidor aceitou SSL 3.0. Alterando padding do bloco CBC...', c: 'log-sys' },
+                    { t: 2800, m: '[+] Oráculo de Preenchimento confirmou byte!', c: 'log-success' },
+                    { t: 3500, m: '    => Cookie recuperado: session=admin_f7a9', c: 'log-success' }
+                ],
+                patch: [
+                    { t: 0, m: '[*] Interceptando Handshake...', c: 'log-sys' },
+                    { t: 800, m: '[!] Tentando forçar Fallback para SSL 3.0...', c: 'log-vuln' },
+                    { t: 1600, m: '[-] FALHA: Servidor rejeitou versão inferior a TLS 1.2', c: 'log-safe' },
+                    { t: 2000, m: '[-] Conexão abortada (Proteção Anti-Downgrade ativa).', c: 'log-safe' }
+                ]
+            },
+            'sweet32': {
+                vuln: [
+                    { t: 0, m: '[*] Detectada cifra 3DES (Bloco 64-bit).', c: 'log-vuln' },
+                    { t: 800, m: '[*] Forçando tráfego volumoso usando JS malicioso no cliente...', c: 'log-sys' },
+                    { t: 1800, m: '[*] Capturando GBs de dados. Calculando Paradoxo do Aniversário...', c: 'log-sys' },
+                    { t: 3000, m: '[+] Colisão de bloco encontrada!', c: 'log-success' },
+                    { t: 3500, m: '    => Plaintext XOR: Authorization: Bearer token_x8...', c: 'log-success' }
+                ],
+                patch: [
+                    { t: 0, m: '[*] Inspecionando Cifras Negociadas...', c: 'log-sys' },
+                    { t: 800, m: '[-] Servidor suporta apenas blocos de 128-bit (AES).', c: 'log-safe' },
+                    { t: 1600, m: '[-] Probabilidade de colisão nula para uso prático.', c: 'log-safe' },
+                    { t: 2000, m: '[-] Abortando ataque Sweet32.', c: 'log-safe' }
+                ]
+            },
+            'bar': {
+                vuln: [
+                    { t: 0, m: '[*] Handshake analisado. Cifra selecionada: RC4-SHA.', c: 'log-vuln' },
+                    { t: 800, m: '[*] Analisando bytes iniciais (Invariance weakness)...', c: 'log-sys' },
+                    { t: 2000, m: '[*] Correlacionando viés dos bits no fluxo criptográfico...', c: 'log-sys' },
+                    { t: 3000, m: '[+] Chave parcial recuperada via falha matemática do RC4!', c: 'log-success' },
+                    { t: 3500, m: '    => Tráfego decifrado em tempo real.', c: 'log-success' }
+                ],
+                patch: [
+                    { t: 0, m: '[*] Tentando negociar RC4 Cipher Suites...', c: 'log-sys' },
+                    { t: 800, m: '[-] Servidor retornou "Handshake Failure" para RC4.', c: 'log-safe' },
+                    { t: 1500, m: '[-] Conexão estabelecida com ChaCha20 (Sem viés conhecido).', c: 'log-safe' },
+                    { t: 2000, m: '[-] Dados seguros.', c: 'log-safe' }
+                ]
+            }
+        };
+
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+        function togglePatch(id) {
+            const card = document.getElementById(`card-${id}`);
+            const badge = document.getElementById(`badge-${id}`);
+            const btn = card.querySelector('.btn-patch');
+            const term = document.getElementById(`term-${id}`);
+            
+            state[id].isPatched = !state[id].isPatched;
+            
+            if (state[id].isPatched) {
+                card.classList.add('patched');
+                badge.innerText = state[id].patchLabel;
+                btn.innerText = "Reverter para Vulnerável";
+                term.innerHTML += `<div class="log-safe"><br>[ SISTEMA ] Patch aplicado: Configuração de servidor atualizada.</div>`;
+            } else {
+                card.classList.remove('patched');
+                badge.innerText = state[id].vulnLabel;
+                btn.innerText = card.querySelector('.card-header h2').innerText.includes('POODLE') ? "Exigir TLS 1.2+" : 
+                               (id === 'sweet32' ? "Exigir AES (128+ bit)" : "Desabilitar RC4");
+                term.innerHTML += `<div class="log-vuln"><br>[ SISTEMA ] Patch revertido: Ambiente vulnerável.</div>`;
+            }
+            term.scrollTop = term.scrollHeight;
+        }
+
+        async function animatePacket(networkId, isPatched) {
+            const net = document.getElementById(networkId);
+            const startX = 60;
+            const middleX = (net.offsetWidth / 2) - 30;
+            const endX = net.offsetWidth - 80;
+            const duration = 2000;
+
+            const packet = document.createElement('div');
+            packet.className = 'packet';
+            packet.style.backgroundColor = isPatched ? 'var(--success)' : 'var(--warning)';
+            packet.style.top = '50%';
+            packet.style.transform = 'translateY(-50%)';
+            packet.innerText = isPatched ? 'ENC_SECURE' : 'ENC_WEAK';
+            packet.style.left = `${startX}px`;
+            
+            net.appendChild(packet);
+
+            // Anima até o servidor (ou falha no meio se Patched/Downgrade block)
+            packet.style.transitionDuration = `${duration}ms`;
+            
+            void packet.offsetWidth;
+
+            if(isPatched && networkId === 'net-poodle') {
+                // Falha no handshake antes de chegar no servidor
+                packet.style.left = `${middleX + 30}px`;
+                setTimeout(() => { packet.style.backgroundColor = 'var(--danger)'; packet.innerText = 'RST'; }, 800);
+                setTimeout(() => { packet.remove(); }, 1600);
+            } else {
+                packet.style.left = `${endX}px`;
+                
+                // Clone pro hacker no meio do caminho
+                setTimeout(() => {
+                    const clone = document.createElement('div');
+                    clone.className = 'packet';
+                    clone.style.backgroundColor = packet.style.backgroundColor;
+                    clone.innerText = packet.innerText;
+                    clone.style.left = `${middleX}px`;
+                    clone.style.top = '50%';
+                    net.appendChild(clone);
+                    
+                    clone.style.transitionDuration = '500ms';
+                    void clone.offsetWidth;
+                    clone.style.top = '120px';
+                    
+                    setTimeout(() => { clone.remove(); }, 600);
+                }, duration / 2);
+
+                setTimeout(() => { packet.remove(); }, duration);
+            }
+        }
+
+        async function runAttack(id) {
+            const btnAttack = document.querySelector(`#card-${id} .btn-attack`);
+            const btnPatch = document.querySelector(`#card-${id} .btn-patch`);
+            const term = document.getElementById(`term-${id}`);
+            const isPatched = state[id].isPatched;
+            
+            btnAttack.disabled = true;
+            btnPatch.disabled = true;
+
+            term.innerHTML += `<br><div class="log-sys">--- Iniciando vetor de ataque ---</div>`;
+            term.scrollTop = term.scrollHeight;
+
+            // Dispara simulação visual
+            // Para o Sweet32 simulamos "vários" pacotes rápidos
+            if(id === 'sweet32' && !isPatched) {
+                for(let i=0; i<5; i++) {
+                    setTimeout(() => animatePacket(`net-${id}`, isPatched), i * 400);
+                }
+            } else {
+                animatePacket(`net-${id}`, isPatched);
+            }
+
+            // Timeline de logs
+            const logSequence = isPatched ? logs[id].patch : logs[id].vuln;
+            
+            for (const logItem of logSequence) {
+                setTimeout(() => {
+                    term.innerHTML += `<div class="${logItem.c}">${logItem.m}</div>`;
+                    term.scrollTop = term.scrollHeight;
+                }, logItem.t);
+            }
+
+            // Reabilita botoes
+            const maxTime = logSequence[logSequence.length - 1].t + 500;
+            setTimeout(() => {
+                btnAttack.disabled = false;
+                btnPatch.disabled = false;
+            }, maxTime);
+        }
+    </script>
+</body>
+</html>
